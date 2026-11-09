@@ -1,7 +1,6 @@
- <p align="center">
-  <img src="Image/Spectre.png" alt="SPECTRE Banner" width="800">
+<p align="center">
+  <img src="Image/Banner.png" alt="Spectre Banner" width="150%">
 </p>
-
 <p align="center">
   <img src="https://img.shields.io/badge/Version-2.1.0-blue.svg?style=flat-square" alt="Version">
   <img src="https://img.shields.io/badge/Python-3.9+-blue.svg?style=flat-square" alt="Python">
