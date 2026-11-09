@@ -308,6 +308,7 @@ Tests cover detection rules, lexical analysis, target parsing, network capture o
   Developed by <b>Project Hellhound</b>
   <br>
   Part of the <a href="https://github.com/project-hellhound-org">Project Hellhound</a> security research ecosystem.
+<<<<<<< HEAD
 </p>
 
 <p align="center">
@@ -321,3 +322,6 @@ Tests cover detection rules, lexical analysis, target parsing, network capture o
 SPECTRE is intended for authorized network monitoring, cybersecurity research, and defensive security assessments. Deploy it only on networks and systems you own or have explicit permission to monitor. The developer assumes no responsibility for unauthorized or unlawful use.</p>
 
 
+=======
+</p
+>>>>>>> origin/main
