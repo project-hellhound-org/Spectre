@@ -1,0 +1,36 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "dnstune"
+version = "2.1.0"
+description = "DNS Tunnel Detector — hybrid rule/statistical/ML DNS tunneling detection"
+requires-python = ">=3.9"
+dependencies = [
+    "scapy>=2.5",
+    "flask>=3.0",
+    "colorama>=0.4",
+    "pyyaml>=6.0",
+    "scikit-learn>=1.3",
+    "numpy>=1.24",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=7.0"]
+
+# `pip install -e .` (inside your venv) registers these two commands.
+# Both are thin wrappers around main() / Loggings.main() — installing
+# with -e (editable mode) means they run directly against this source
+# tree, so template/static files resolve correctly with no separate
+# packaging step.
+[project.scripts]
+dnstune = "main:main"
+dnstune-logs = "Loggings:main"
+
+[tool.setuptools]
+py-modules = ["main", "Loggings"]
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["core*", "collector*", "features*", "detection*", "storage*", "dashboard*"]

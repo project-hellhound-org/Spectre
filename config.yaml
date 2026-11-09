@@ -1,0 +1,33 @@
+# DNS Tunnel Detector — detection configuration
+# Every value here has a hardcoded fallback in core/config.py, so this
+# file is optional; edit only the thresholds you want to change.
+
+detection:
+  # --- Lexical rules ---
+  max_label_count: 5          # subdomain-chain rule (exempts *.in-addr.arpa / *.ip6.arpa)
+  entropy_threshold: 4.2      # case-sensitive Shannon entropy, bits, on the leftmost label
+  max_fqdn_length: 50         # total query-name length rule (documented but missing in v1)
+  max_label_length: 50        # longest single label
+
+  # --- Behavioral rules (sliding window) ---
+  window_seconds: 300         # 5-minute rolling window for all rate/ratio rules
+  unique_ratio_threshold: 0.85
+  min_queries_for_ratio: 10   # don't score unique-ratio on a domain with too little history
+  qps_threshold: 5.0          # queries/sec, per source host
+
+  # --- Record-type rules (from response inspection) ---
+  txt_ratio_threshold: 0.5
+  nxdomain_ratio_threshold: 0.3
+
+# Rule scoring weights — sum contributes to the 0-100 risk score.
+# Severity bands (fixed in detection/correlation.py):
+#   85-100 CRITICAL   70-84 HIGH   50-69 SUSPICIOUS   25-49 LOW   0-24 BENIGN
+weights:
+  long_subdomain_chain: 10
+  high_entropy_label: 20
+  long_query_name: 15
+  high_unique_subdomain_ratio: 20
+  high_query_rate: 10
+  txt_heavy: 10
+  nxdomain_spike: 10
+  encoding_match: 10

@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DNS Tunnel Detector</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+  <div class="shell">
+
+    <div class="console-header">
+      <div class="title-block">
+        <h1>DNS <span>TUNNEL</span> DETECTOR</h1>
+        <div class="scope">Target: <b id="scope-text">{{ scope }}</b></div>
+      </div>
+      <div class="header-right">
+        <form class="swap-box" id="swap-form">
+          <input type="text" id="swap-input" placeholder="IP, CIDR, domain, or URL — 'all' to clear" autocomplete="off">
+          <button type="submit">Swap</button>
+        </form>
+        <div class="status">
+          <span class="pulse-dot" id="pulse"></span>
+          <span id="status-text">Live</span>
+        </div>
+      </div>
+    </div>
+    <div class="swap-msg" id="swap-msg"></div>
+
+    <div class="summary" id="summary">
+      <div class="card CRITICAL"><div class="n" id="count-CRITICAL">0</div><div class="label">Critical</div></div>
+      <div class="card HIGH"><div class="n" id="count-HIGH">0</div><div class="label">High</div></div>
+      <div class="card SUSPICIOUS"><div class="n" id="count-SUSPICIOUS">0</div><div class="label">Suspicious</div></div>
+      <div class="card LOW"><div class="n" id="count-LOW">0</div><div class="label">Low</div></div>
+      <div class="card BENIGN"><div class="n" id="count-BENIGN">0</div><div class="label">Benign</div></div>
+    </div>
+
+    <div class="main-grid">
+      <div class="panel">
+        <div class="panel-head"><span>Priority Findings</span><span id="findings-count">—</span></div>
+        <div class="panel-body" id="findings-body">
+          <div class="empty-state">No SUSPICIOUS or higher findings yet.</div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-head"><span>Live Activity</span><span id="last-updated">—</span></div>
+        <div class="panel-body">
+          <table>
+            <thead>
+              <tr>
+                <th>Time</th><th>Source</th><th>Destination</th><th>Proto</th><th>Query</th><th>Score</th><th>Sev</th>
+              </tr>
+            </thead>
+            <tbody id="event-rows">
+              <tr><td colspan="7" class="empty-state">Waiting for DNS events…</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <footer>DNS Tunnel Detector · rule + statistical + ML correlation engine</footer>
+  </div>
+
+  <script>
+    const SEVERITIES = ["CRITICAL", "HIGH", "SUSPICIOUS", "LOW", "BENIGN"];
+
+    function escapeHtml(s) {
+      return String(s).replace(/[&<>"']/g, c => ({
+        "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
+      }[c]));
+    }
+
+    function renderFinding(e) {
+      const evidence = (e.evidence && e.evidence.length)
+        ? '<div class="finding-evidence">' + e.evidence.map(ev => `<div>${escapeHtml(ev)}</div>`).join("") + '</div>'
+        : "";
+      return `
+        <div class="finding ${e.severity}">
+          <div class="finding-top">
+            <span class="badge ${e.severity}">${e.severity}</span>
+            <span class="score">${e.score}</span>
+          </div>
+          <div class="finding-query">${escapeHtml(e.query)}</div>
+          <div class="finding-meta">${escapeHtml(e.time)} · ${escapeHtml(e.src_ip)} → ${escapeHtml(e.dst_ip)} · ${escapeHtml((e.transport||'udp').toUpperCase())}</div>
+          ${evidence}
+        </div>`;
+    }
+
+    async function refresh() {
+      try {
+        const [events, summary, scope, findings] = await Promise.all([
+          fetch("/api/events?limit=200").then(r => r.json()),
+          fetch("/api/summary").then(r => r.json()),
+          fetch("/api/scope").then(r => r.json()),
+          fetch("/api/events?limit=50&min_severity=SUSPICIOUS").then(r => r.json()),
+        ]);
+
+        for (const sev of SEVERITIES) {
+          const el = document.getElementById("count-" + sev);
+          if (el) el.textContent = summary[sev] ?? 0;
+        }
+
+        document.getElementById("scope-text").textContent = scope.scope;
+        document.getElementById("status-text").textContent = scope.capturing ? "Live" : "Stopped";
+        document.getElementById("pulse").className = "pulse-dot" + (scope.capturing ? "" : " stopped");
+
+        const findingsBody = document.getElementById("findings-body");
+        document.getElementById("findings-count").textContent = findings.length + " found";
+        findingsBody.innerHTML = findings.length
+          ? findings.map(renderFinding).join("")
+          : '<div class="empty-state">No SUSPICIOUS or higher findings yet.</div>';
+
+        const rows = document.getElementById("event-rows");
+        rows.innerHTML = events.length
+          ? events.map(e => `
+              <tr>
+                <td>${escapeHtml(e.time)}</td>
+                <td>${escapeHtml(e.src_ip)}</td>
+                <td>${escapeHtml(e.dst_ip)}</td>
+                <td class="transport">${escapeHtml((e.transport||'udp').toUpperCase())}</td>
+                <td class="q-name">${escapeHtml(e.query)}</td>
+                <td class="score">${e.score}</td>
+                <td><span class="badge ${e.severity}">${e.severity}</span></td>
+              </tr>`).join("")
+          : '<tr><td colspan="7" class="empty-state">Waiting for DNS events…</td></tr>';
+
+        document.getElementById("last-updated").textContent = "updated " + new Date().toLocaleTimeString();
+      } catch (err) {
+        document.getElementById("status-text").textContent = "Connection lost";
+      }
+    }
+
+    document.getElementById("swap-form").addEventListener("submit", async (evt) => {
+      evt.preventDefault();
+      const input = document.getElementById("swap-input");
+      const msg = document.getElementById("swap-msg");
+      const raw = input.value.trim();
+      if (!raw) return;
+
+      const targets = raw.toLowerCase() === "all" ? [] : raw.split(",").map(t => t.trim()).filter(Boolean);
+
+      msg.className = "swap-msg";
+      msg.textContent = "Swapping target…";
+      try {
+        const res = await fetch("/api/swap", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ targets }),
+        });
+        const data = await res.json();
+        if (data.ok) {
+          msg.className = "swap-msg ok";
+          msg.textContent = "Now monitoring: " + data.scope;
+          input.value = "";
+        } else {
+          msg.className = "swap-msg err";
+          msg.textContent = data.error || "Swap failed.";
+        }
+      } catch (err) {
+        msg.className = "swap-msg err";
+        msg.textContent = "Could not reach the detector.";
+      }
+      refresh();
+    });
+
+    refresh();
+    setInterval(refresh, 3000);
+  </script>
+</body>
+</html>
