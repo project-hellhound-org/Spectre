@@ -298,30 +298,14 @@ Tests cover detection rules, lexical analysis, target parsing, network capture o
 
 ---
 
-## Author & Project
+## Author
 
 <p align="center">
-  <img src="https://img.shields.io/badge/Founder-ALPH4_X3-c0392b?style=for-the-badge" alt="ALPH4_X3">
+  <img src="https://img.shields.io/badge/Author-ALPH4_X3-c0392b?style=for-the-badge" alt="ALPH4_X3">
 </p>
 
 <p align="center">
   Developed by <b>Project Hellhound</b>
   <br>
   Part of the <a href="https://github.com/project-hellhound-org">Project Hellhound</a> security research ecosystem.
-<<<<<<< HEAD
 </p>
-
-<p align="center">
-  <b>Think Beyond Visibility. Detect Beyond Signatures.</b>
-</p>
-
----
-
-## Legal Disclaimer
-
-SPECTRE is intended for authorized network monitoring, cybersecurity research, and defensive security assessments. Deploy it only on networks and systems you own or have explicit permission to monitor. The developer assumes no responsibility for unauthorized or unlawful use.</p>
-
-
-=======
-</p
->>>>>>> origin/main
